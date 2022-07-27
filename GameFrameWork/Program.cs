@@ -1,11 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace GameFrameWork
 {
+    class Time
+    {
+        public static double deltaTime;
+    }
     class GameFrameWork
     {
         public bool IsPlaying = true;
+        //public double sec_check = 0; //game frame work 내에 멤버변수 생성하여 일처리
+        //public int sec = 0;
+        double playTime = 0.0;
+        int Count = 0;
         public void Start()//반복전에 처음 시작할 때만 하는 초기작업.
         {
             Console.WriteLine("게임을 시작 합니다.");
@@ -22,17 +31,39 @@ namespace GameFrameWork
             }
         }
         public void Update()//매 프레임마다 반복해야하는 일.
-        {
-            InputProcess();//1.입력을 받음            
-            Console.WriteLine(DateTime.Now.Ticks);//Datetime.Now : 현재시간
+        {//1.입력을 받음
+            InputProcess();
+            //Console.WriteLine(DateTime.Now.Ticks);//Datetime.Now : 현재시간
             //Ticks : 컴퓨터 내의 1/천만 의 초단위인 clock을 측정
-            // 2.입력받은 값을 처리/계산
-            Draw();//3.계산결과 그림
+        // 2.입력받은 값을 처리/계산
+            //컴퓨터의 사양마다 다른 진행을 없애기 위해
+            //*Time.deltaTime 을 해주면 프레임 차이가 나도 초당 게임의 진행이 같다.
+            //프레임 간격시간을 곱해주는 순간 초당 행동이 되는 것이다.
+            playTime += 3.0f * Time.deltaTime;
+            //매초마다 1초 2초 3초가 표시되게하기
+            //누적된 시간을 저장하는 변수 필요.
+            //선생님코드
+            playTime += Time.deltaTime;
+            if(playTime>=1.0)
+            {
+                playTime = 0.0f;
+                Console.WriteLine($"{++Count}초");
+            }
+            //sec_check += Time.deltaTime;
+            /*
+            if (sec_check > 1)
+            {
+                ++sec;
+                sec_check = 0;
+                Console.WriteLine($"{sec}초");
+            }
+            */
+        //3.계산결과 그림
+            Draw();
             //위의 1,2,3 논리 순서 매우중요!! 
         }
         void Draw()
         {
-
         }
         public void Destory()//종료하기 전에 해야하는 일
         {         //ex)서버에 저장.
@@ -54,14 +85,18 @@ namespace GameFrameWork
             //1 frame work 시간을 재야함.
             GameFrameWork gfw = new GameFrameWork();
             long startTick = DateTime.Now.Ticks;
-
+            
             gfw.Start();
             while (gfw.IsPlaying)//매우 간단한 Frame work
             {
                 long deltaTick = DateTime.Now.Ticks - startTick;
+                //deltaTick: Update가 1frame도는데 걸린 clock수 > 천만이 되면 1초. 
                 startTick = DateTime.Now.Ticks;
+                Time.deltaTime = deltaTick / 10000000.0;//1.0을 1초로 변환해 저장.
                 //Frame Work
+                
                 gfw.Update();
+                Thread.Sleep(1);// 1/1000초 지연
             }            
             gfw.Destory();
         }
