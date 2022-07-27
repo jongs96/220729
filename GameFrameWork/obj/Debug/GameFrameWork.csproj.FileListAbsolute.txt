@@ -1,0 +1,7 @@
+D:\G-Class오전반\GameFrameWork\GameFrameWork\bin\Debug\GameFrameWork.exe.config
+D:\G-Class오전반\GameFrameWork\GameFrameWork\bin\Debug\GameFrameWork.exe
+D:\G-Class오전반\GameFrameWork\GameFrameWork\bin\Debug\GameFrameWork.pdb
+D:\G-Class오전반\GameFrameWork\GameFrameWork\obj\Debug\GameFrameWork.csproj.AssemblyReference.cache
+D:\G-Class오전반\GameFrameWork\GameFrameWork\obj\Debug\GameFrameWork.csproj.CoreCompileInputs.cache
+D:\G-Class오전반\GameFrameWork\GameFrameWork\obj\Debug\GameFrameWork.exe
+D:\G-Class오전반\GameFrameWork\GameFrameWork\obj\Debug\GameFrameWork.pdb
