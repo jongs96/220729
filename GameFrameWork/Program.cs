@@ -19,6 +19,20 @@ namespace GameFrameWork
             CTEATE, START, PLAY, GAMEOVER
         }
 
+        enum ITEM
+        {
+            //빗자루 - 1몇초마다 숫자 하나씩(뒤에서부터) 자동으로 제거(5초동안)
+            //청소기 - 숫자 올클리어
+            //또또또 - 같은 숫자만 여러개나오기 (5개)
+            //보약 - 라이프 증가(+1)
+            //피버 - 점수2배 (5초)
+            //타임머신 레벨 다운 (속도도 같이 내려가기)
+            //달팽이 - 5초간 속도 감소
+            NONE, BROOM, CLEANER, TOTO, MEDI, FEVER, TIMEMACHINE, SNAIL
+        }
+
+        ITEM[] itemSlot = new ITEM[3] { ITEM.NONE, ITEM.NONE, ITEM.NONE };
+
         STATE myState = STATE.CTEATE;// 생성되는 상태로 초기화.
 
         public bool IsPlaying = true;
@@ -28,8 +42,11 @@ namespace GameFrameWork
         bool reDraw = true;
         int score = 0;
         int LevelCount = 0, Level =1;
+        int ItemCount = 0;
         double speed = 2.0;
         int Life = 3;
+        double itemTime = 0.0;
+        ITEM usedItem = ITEM.NONE;
         
         void ChangeState(STATE s)//함수를 통해서만 상태를 바꿔줘야함
         {
@@ -58,7 +75,6 @@ namespace GameFrameWork
                     reDraw = true;
                     break;
                 case STATE.GAMEOVER:
-                    Console.Clear();
                     GameOver();
                     break;
             }
@@ -77,6 +93,24 @@ namespace GameFrameWork
                     break;
                 case STATE.PLAY://play상태에서만 게임 플레이가 진행이 되는것
                     PlayInputProcess();
+
+                    if (usedItem != ITEM.NONE)
+                    {
+                        itemTime -= Time.deltaTime;
+                        if (itemTime <= 0.0f)
+                        {
+                            usedItem = ITEM.NONE;
+                        }
+                        else
+                        {
+                            switch(usedItem)
+                            {
+                                case ITEM.BROOM://1초가 지났는지를 셀수있는 변수로 지날때마다 numlist.count -1 숫자제거
+                                    break;
+                            }
+                        }
+                    }
+
                     playTime += Time.deltaTime;
 
                     if (playTime >= speed)
@@ -93,11 +127,7 @@ namespace GameFrameWork
                             reDraw = true;
                         }
                     }
-                    if(Life == 0)
-                    {
-                        ChangeState(STATE.GAMEOVER);
-                    }
-                    Draw();
+                    Draw();                   
                     break;
                 case STATE.GAMEOVER:
                     if(Console.KeyAvailable)
@@ -132,26 +162,50 @@ namespace GameFrameWork
                     case ConsoleKey.Escape:
                         IsPlaying = false;
                         break;
-                    
+                    case ConsoleKey.Q:
+                        UseItem(0);
+                        break;
+                    case ConsoleKey.W:
+                        UseItem(1);
+                        break;
+                    case ConsoleKey.E:
+                        UseItem(2);
+                        break;
+
                     default:
                         if (numList.Count > 0)//list내부에 아무것도 없을경우 실행하는 에러방지
                         {
                             int num = pressedKey - ConsoleKey.NumPad0;
                             if (num == numList[0])
                             {
-                                numList.RemoveAt(0);
                                 reDraw = true;
+                                numList.RemoveAt(0);
                                 score += 10;
                                 if (++LevelCount == 3)
                                 {
                                     LevelCount = 0;
                                     LevelUp();
                                 }
+                                if(++ItemCount==3)
+                                {
+                                    ItemCount = 0;
+                                    AddItem();
+                                }
                             }
                             else
                             {
-                                Life--;
-                                reDraw = true;
+                                if (num > 0 && num < 6) 
+                                {
+                                    if (--Life == 0)//1~5사이의 값 잘못입력한경우
+                                    {
+                                        ChangeState(STATE.GAMEOVER);
+                                    }
+                                    else
+                                    {
+                                        reDraw = true;
+                                    }
+                                }
+                                
                             }
                         }
                         
@@ -160,6 +214,34 @@ namespace GameFrameWork
                 }
             }
         }
+        void UseItem(int i)// i = Slot number
+        {
+            usedItem = itemSlot[i];
+            itemSlot[i] = ITEM.NONE;
+            switch(itemSlot[i])
+            {
+                case ITEM.NONE:
+                    break;
+                case ITEM.BROOM:
+                    itemTime = 5.0;
+                    break;
+            }
+            reDraw = true;
+        }
+        void AddItem()
+        {
+            ITEM item = ITEM.BROOM;
+            for(int i = 0; i < itemSlot.Length; ++i)
+            {
+                if(itemSlot[i] == ITEM.NONE)
+                {
+                    itemSlot[i] = item;
+                    reDraw = true;
+                    break;
+                }
+            }
+        }
+
         void LevelUp()
         {
             Level++;
@@ -202,7 +284,28 @@ namespace GameFrameWork
             }
             Console.ForegroundColor = old;
             Console.WriteLine();
+            Console.WriteLine();
+
+            foreach(ITEM item in itemSlot)
+            {
+                Console.Write($"[{GetItemName(item)}]");
+            }
+
             reDraw = false;
+        }
+        string GetItemName(ITEM item)
+        {
+            string name = "";
+            switch(item)
+            {
+                case ITEM.NONE:
+                    name = "없음";
+                    break;
+                case ITEM.BROOM:
+                    name = "빗자루";
+                    break;
+            }
+            return name;
         }
         public void Destory()
         {
@@ -222,6 +325,10 @@ namespace GameFrameWork
             //15개의 숫자를 지울때 마다 레벨이 증가한다.
             //레벨이 증가하면 숫자가 추가 되는 속도가 10퍼센트 빨라진다.
             //라이프(초기값 3) - 잘못된 번호를 누르면 줄어든다. 라이프가 0이 되면 게임오버.
+            
+            //아이템은 20개를 지울때마다 얻을 수 있다.
+            //아이템은 3개까지 모을 수 있다. ( 3슬롯 )
+            //Q,W,E 키로 해당 슬롯의 아이템을 사용할 수있다.
 
             GameFrameWork gfw = new GameFrameWork();
             long startTick = DateTime.Now.Ticks;
