@@ -4,12 +4,23 @@ using System.Threading;
 
 namespace GameFrameWork
 {
+    //유한상태기계(FSM)
+    //상태에 따라 동작하도록 하는 것
+    //상태는 중복되지 않아야 한다. ex)normal, battle의 상태가 중복될 수 없음.
+    //
     class Time
     {
         public static double deltaTime;
     }
     class GameFrameWork
-    {        
+    {
+        enum STATE//일반적으로 상태는 열겨형으로 표현.
+        {
+            CTEATE, START, PLAY, GAMEOVER
+        }
+
+        STATE myState = STATE.CTEATE;// 생성되는 상태로 초기화.
+
         public bool IsPlaying = true;
         double playTime = 0.0f;
         List<int> numList = new List<int>();
@@ -18,13 +29,100 @@ namespace GameFrameWork
         int score = 0;
         int LevelCount = 0, Level =1;
         double speed = 2.0;
+        int Life = 3;
         
+        void ChangeState(STATE s)//함수를 통해서만 상태를 바꿔줘야함
+        {
+            if (myState == s) return;
+            myState = s;
+            switch(myState)//각각의 상태에서 해야할 일 분기문처리.
+            {
+                case STATE.CTEATE:
+                    break;
+                case STATE.START:
+                    Console.Clear();
+
+                    score = 0;
+                    Level = 1;
+                    LevelCount = 0;
+                    speed = 2.0;
+                    playTime = 0.0f;
+                    Life = 3;
+                    numList.Clear();
+
+                    Console.WriteLine("숫자 디펜스");
+                    Console.WriteLine("Press anykey to start");
+                    break;
+                case STATE.PLAY:
+                    Console.Clear();//Play상태로 변환되면 이전글자들 삭제
+                    reDraw = true;
+                    break;
+                case STATE.GAMEOVER:
+                    Console.Clear();
+                    GameOver();
+                    break;
+            }
+        }
+        void StateProcess()//매 프레임마다해야할 일.
+        {//항상 호출될 수 있도록 Update문에 넣어줘야함.
+            switch (myState)
+            {
+                case STATE.CTEATE:
+                    break;
+                case STATE.START:
+                    if(Console.KeyAvailable)//아무키나 누르면
+                    {
+                        ChangeState(STATE.PLAY);//play 상태로 변환.
+                    }
+                    break;
+                case STATE.PLAY://play상태에서만 게임 플레이가 진행이 되는것
+                    PlayInputProcess();
+                    playTime += Time.deltaTime;
+
+                    if (playTime >= speed)
+                    {
+                        playTime = 0.0f;
+                        if (numList.Count == 10)
+                        {
+                            //Game over
+                            ChangeState(STATE.GAMEOVER);
+                        }
+                        else
+                        {
+                            numList.Add(myRandom.Next(1, 6));
+                            reDraw = true;
+                        }
+                    }
+                    if(Life == 0)
+                    {
+                        ChangeState(STATE.GAMEOVER);
+                    }
+                    Draw();
+                    break;
+                case STATE.GAMEOVER:
+                    if(Console.KeyAvailable)
+                    {
+                        ConsoleKey pressedKey = Console.ReadKey(true).Key;
+                        switch(pressedKey)
+                        {
+                            case ConsoleKey.Y:
+                                ChangeState(STATE.START);
+                                break;
+                            case ConsoleKey.N:
+                                IsPlaying = false;
+                                break;
+                        }
+                    }
+                    break;
+            }
+        }
         public void Start()
         {
             Console.CursorVisible = false;
             //Console.WriteLine("게임을 시작합니다.");
+            ChangeState(STATE.START);
         }
-        void InputProcess()
+        void PlayInputProcess()
         {
             if (Console.KeyAvailable)
             {
@@ -34,57 +132,31 @@ namespace GameFrameWork
                     case ConsoleKey.Escape:
                         IsPlaying = false;
                         break;
-                    /*
-                    case ConsoleKey.NumPad1:
-                        if (numList[0] == 1)
-                        {
-                            numList.RemoveAt(0);
-                            reDraw = true;
-                        }
-                        break;
-                    case ConsoleKey.NumPad2:
-                        if (numList[0] == 2)
-                        {
-                            numList.RemoveAt(0);
-                            reDraw = true;
-                        }
-                        break;
-                    case ConsoleKey.NumPad3:
-                        if (numList[0] == 3)
-                        {
-                            numList.RemoveAt(0);
-                            reDraw = true;
-                        }
-                        break;
-                    case ConsoleKey.NumPad4:
-                        if (numList[0] == 1)
-                        {
-                            numList.RemoveAt(4);
-                            reDraw = true;
-                        }
-                        break;
-                    case ConsoleKey.NumPad5:
-                        if (numList[0] == 5)
-                        {
-                            numList.RemoveAt(0);
-                            reDraw = true;
-                        }
-                        break;
-                    */
+                    
                     default:
-                        int num = pressedKey - ConsoleKey.NumPad0;
-                        if(num == numList[0])
+                        if (numList.Count > 0)//list내부에 아무것도 없을경우 실행하는 에러방지
                         {
-                            numList.RemoveAt(0);
-                            reDraw = true;
-                            score += 10;
-                            if(++LevelCount == 3)
+                            int num = pressedKey - ConsoleKey.NumPad0;
+                            if (num == numList[0])
                             {
-                                LevelCount = 0;
-                                LevelUp();
+                                numList.RemoveAt(0);
+                                reDraw = true;
+                                score += 10;
+                                if (++LevelCount == 3)
+                                {
+                                    LevelCount = 0;
+                                    LevelUp();
+                                }
+                            }
+                            else
+                            {
+                                Life--;
+                                reDraw = true;
                             }
                         }
-                        break;                    
+                        
+                        break;
+                        
                 }
             }
         }
@@ -95,41 +167,14 @@ namespace GameFrameWork
         }
         public void Update()
         {
-            InputProcess();
-            
-            playTime += Time.deltaTime;
-            //Console.SetCursorPosition(0, 4);
-            //Console.WriteLine($"Add Time:{playTime.ToString("0.00")}");
-            //Console.WriteLine($"Add speed:{speed.ToString("0.00")}");
-
-            if (playTime >= speed)
-            {   
-                playTime = 0.0f;                    
-                if (numList.Count == 10)
-                {
-                    //Game over
-                    GameOver();
-                }
-                else
-                {
-                    numList.Add(myRandom.Next(1, 6));
-                    reDraw = true;
-                }
-            }
-            /*
-            if(numList.Count >10)
-            {
-                IsPlaying = false;
-            }
-            */
-            Draw();//최적화 : 화면에 그려야하는 상황에만 그리도록 하는 것이 좋다.
+            StateProcess();
         }
         void GameOver()
         {
             Console.Clear();
             Console.WriteLine("Game Over!");
             Console.WriteLine($"Your Score:{score}");
-            IsPlaying = false;
+            Console.WriteLine("Retry? y/n");
         }
         void Draw()
         {
@@ -142,6 +187,9 @@ namespace GameFrameWork
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Score:{score.ToString("00000")}");
             Console.ForegroundColor = old;
+            Console.SetCursorPosition(20, 1);
+            Console.WriteLine($"Life :{Life}");
+            Console.SetCursorPosition(0, 1);
             for (int i = numList.Count - 1; i >= 0; --i)
             {
                 Console.Write(numList[i]);
@@ -158,7 +206,7 @@ namespace GameFrameWork
         }
         public void Destory()
         {
-            Console.WriteLine("게임을 종료합니다.");
+            //Console.WriteLine("게임을 종료합니다.");
         }
     }
     class Program
@@ -173,6 +221,7 @@ namespace GameFrameWork
             //숫자를 지울 때마다 점수를 얻는다.(10점 추가)
             //15개의 숫자를 지울때 마다 레벨이 증가한다.
             //레벨이 증가하면 숫자가 추가 되는 속도가 10퍼센트 빨라진다.
+            //라이프(초기값 3) - 잘못된 번호를 누르면 줄어든다. 라이프가 0이 되면 게임오버.
 
             GameFrameWork gfw = new GameFrameWork();
             long startTick = DateTime.Now.Ticks;
