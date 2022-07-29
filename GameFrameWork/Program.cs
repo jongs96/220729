@@ -16,6 +16,8 @@ namespace GameFrameWork
         static Random myRandom = new Random();
         bool reDraw = true;
         int score = 0;
+        int LevelCount = 0, Level =1;
+        double speed = 2.0;
         
         public void Start()
         {
@@ -75,41 +77,77 @@ namespace GameFrameWork
                         {
                             numList.RemoveAt(0);
                             reDraw = true;
+                            score += 10;
+                            if(++LevelCount == 3)
+                            {
+                                LevelCount = 0;
+                                LevelUp();
+                            }
                         }
-                        break;
+                        break;                    
                 }
             }
+        }
+        void LevelUp()
+        {
+            Level++;
+            speed *= 0.9;
         }
         public void Update()
         {
             InputProcess();
             
             playTime += Time.deltaTime;
-            
-            if (playTime >= 2 )
-            {
-                playTime = 0.0f;
-                numList.Add(myRandom.Next(1,6));
-                reDraw = true;
-            }
+            //Console.SetCursorPosition(0, 4);
+            //Console.WriteLine($"Add Time:{playTime.ToString("0.00")}");
+            //Console.WriteLine($"Add speed:{speed.ToString("0.00")}");
 
-            if(numList.Count >=10)
+            if (playTime >= speed)
+            {   
+                playTime = 0.0f;                    
+                if (numList.Count == 10)
+                {
+                    //Game over
+                    GameOver();
+                }
+                else
+                {
+                    numList.Add(myRandom.Next(1, 6));
+                    reDraw = true;
+                }
+            }
+            /*
+            if(numList.Count >10)
             {
                 IsPlaying = false;
             }
-
+            */
             Draw();//최적화 : 화면에 그려야하는 상황에만 그리도록 하는 것이 좋다.
+        }
+        void GameOver()
+        {
+            Console.Clear();
+            Console.WriteLine("Game Over!");
+            Console.WriteLine($"Your Score:{score}");
+            IsPlaying = false;
         }
         void Draw()
         {
             if (!reDraw) return;
+            ConsoleColor old = Console.ForegroundColor;
             Console.SetCursorPosition(0, 0);
-            for(int i = numList.Count - 1; i >= 0; --i)
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"Level: {Level}");
+            Console.SetCursorPosition(20, 0);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"Score:{score.ToString("00000")}");
+            Console.ForegroundColor = old;
+            for (int i = numList.Count - 1; i >= 0; --i)
             {
                 Console.Write(numList[i]);
             }
-            ConsoleColor old = Console.ForegroundColor;  //이전색 old에 저장
-            Console.ForegroundColor = ConsoleColor.Yellow;//색변환
+            old = Console.ForegroundColor;  //이전색 old에 저장
+            Console.ForegroundColor = ConsoleColor.Red;//색변환
             for(int i =0; i < 10 - numList.Count; ++i)
             {
                 Console.Write("*");
@@ -131,7 +169,7 @@ namespace GameFrameWork
             //일정시간(2초)마다 랜덤한(1~5) 숫자가 추가된다.
             //=>시간을 재는 변수, 랜덤숫자 저장 동적배열
             //가장 먼저 추가된 숫자를 눌러서 지운다. - 키패드 숫자이용.
-            //10개이상의 숫자가 쌓이면 게임오버
+            //숫자가 10를 초과하면 게임오버
             //숫자를 지울 때마다 점수를 얻는다.(10점 추가)
             //15개의 숫자를 지울때 마다 레벨이 증가한다.
             //레벨이 증가하면 숫자가 추가 되는 속도가 10퍼센트 빨라진다.
