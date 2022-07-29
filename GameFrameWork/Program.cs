@@ -68,8 +68,7 @@ namespace GameFrameWork
             if (!Pause)//Pause false일경우만 실행.
             {
                 playTime += Time.deltaTime;
-                playTime *= 100000;
-
+                //playTime *= 2;
                 //Console.SetCursorPosition(0, 1); //(행, 열)해당 위치로 이동해서 출력
                 //Console.Write(h.ToString("00:"));
                 //Console.Write(m.ToString("00:"));
@@ -78,7 +77,7 @@ namespace GameFrameWork
                 if (playTime >= 1.0)
                 {
                     //Console.Clear();
-                    playTime = 0.0f;
+                    playTime -= 0.0f;//오차를 줄이기위해 -, 0으로 초기화시 자투리시간만큼 오차가생김
                     ++s;
                     if (s > 59)
                     {
