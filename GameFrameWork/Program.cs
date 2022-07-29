@@ -14,11 +14,11 @@ namespace GameFrameWork
         //public double sec_check = 0; //game frame work 내에 멤버변수 생성하여 일처리
         //public int sec = 0;
         double playTime = 0.0;
-        int s = 0, m = 0, h = 0;
-        bool stop = true;
+        int s, m, h = 0;
+        bool Pause = true;//토글방식 
         public void Start()//반복전에 처음 시작할 때만 하는 초기작업.
         {
-            Console.WriteLine("게임을 시작 합니다.");
+            //Console.WriteLine("게임을 시작 합니다.");
         }
         void InputProcess()
         {
@@ -26,7 +26,7 @@ namespace GameFrameWork
             {//key입력이 들어왔을 때만 해당하게 안해주면 응답 대기상태에 빠져버림.
                 ConsoleKey pressedKey = Console.ReadKey(true).Key;
                 //사용한 키를 제거하지 않게 하기위해
-                /*
+                /*밑의 Console.ReadKey(true).Key 방식은 queue에서 해당값을 빼서 다음에 사용못함.
                 if (Console.ReadKey(true).Key == ConsoleKey.Escape)//key값을 가지고 어떤 키를 입력받았는지 확인
                 {//readkey default 값 false >> 입력한 키 알려줌.
                  //esc 키를 눌렀으면 false
@@ -37,23 +37,18 @@ namespace GameFrameWork
 
                 }
                 */
-                while (true)
+                switch (pressedKey)
                 {
-                    switch (pressedKey)
-                    {
-                        case ConsoleKey.Escape:
-                            IsPlaying = false;
-                            break;
-                        case ConsoleKey.Spacebar:
-                            stop = true;
-                            break;
-                        case ConsoleKey.Enter:
-                            h = 0;
-                            m = 0;
-                            s = 0;
-                            break;
-                    }
-                    if (stop == false) break;
+                    case ConsoleKey.Escape:
+                        IsPlaying = false;
+                        break;
+                    case ConsoleKey.Spacebar:
+                        Pause = !Pause;
+                        break;
+                    case ConsoleKey.Enter:
+                        Pause = true;
+                        h =  m = s = 0;// 우 > 좌 순서로 0 초기화.
+                        break;
                 }
             }            
         }
@@ -62,7 +57,7 @@ namespace GameFrameWork
             InputProcess();
             //Console.WriteLine(DateTime.Now.Ticks);//Datetime.Now : 현재시간
             //Ticks : 컴퓨터 내의 1/천만 의 초단위인 clock을 측정
-        // 2.입력받은 값을 처리/계산
+            // 2.입력받은 값을 처리/계산
             //컴퓨터의 사양마다 다른 진행을 없애기 위해
             //*Time.deltaTime 을 해주면 프레임 차이가 나도 초당 게임의 진행이 같다.
             //프레임 간격시간을 곱해주는 순간 초당 행동이 되는 것이다.
@@ -70,30 +65,33 @@ namespace GameFrameWork
             //매초마다 1초 2초 3초가 표시되게하기
             //누적된 시간을 저장하는 변수 필요.
             //선생님코드
-            playTime += Time.deltaTime;
-            //playTime *= 2;
-
-            Console.SetCursorPosition(0, 1); //(행, 열)해당 위치로 이동해서 출력
-            Console.Write(h.ToString("00:"));
-            Console.Write(m.ToString("00:"));
-            Console.Write((s).ToString("00\n"));
-            
-            if (playTime>=1.0)
+            if (!Pause)//Pause false일경우만 실행.
             {
-                //Console.Clear();
-                playTime = 0.0f;
-                ++s;
-                if (s > 59)
+                playTime += Time.deltaTime;
+                playTime *= 100000;
+
+                //Console.SetCursorPosition(0, 1); //(행, 열)해당 위치로 이동해서 출력
+                //Console.Write(h.ToString("00:"));
+                //Console.Write(m.ToString("00:"));
+                //Console.Write((s).ToString("00\n"));
+
+                if (playTime >= 1.0)
                 {
-                    s = 0;
-                    ++m;
+                    //Console.Clear();
+                    playTime = 0.0f;
+                    ++s;
+                    if (s > 59)
+                    {
+                        s = 0;
+                        ++m;
+                    }
+                    if (m > 59)
+                    {
+                        m = 0;
+                        ++h;
+                    }
+                    //Console.WriteLine(s.ToString("00"));//"00"형태로 출력하라는 포맷 제공
                 }
-                if (m > 59)
-                {
-                    m = 0;
-                    ++h;                    
-                }
-                //Console.WriteLine(s.ToString("00"));//"00"형태로 출력하라는 포맷 제공
             }
             //sec_check += Time.deltaTime;
             /*
@@ -108,8 +106,10 @@ namespace GameFrameWork
             Draw();
             //위의 1,2,3 논리 순서 중요!! 
         }
-        void Draw()
+        void Draw()//07.29 ++
         {
+            Console.SetCursorPosition(0, 0);
+            Console.WriteLine($"{h.ToString("00")} : {m.ToString("00")} : {s.ToString("00")}");
         }
         public void Destory()//종료하기 전에 해야하는 일
         {         //ex)서버에 저장.
