@@ -96,6 +96,7 @@ namespace GameFrameWork
 
                     if (usedItem != ITEM.NONE)
                     {
+                        itemTime = 5.0f;
                         itemTime -= Time.deltaTime;
                         if (itemTime <= 0.0f)
                         {
@@ -106,6 +107,16 @@ namespace GameFrameWork
                             switch(usedItem)
                             {
                                 case ITEM.BROOM://1초가 지났는지를 셀수있는 변수로 지날때마다 numlist.count -1 숫자제거
+                                    while (ItemCount < 5)
+                                    {
+                                        if (itemTime > 1)
+                                        {
+                                            itemTime -= 1;
+                                            ItemCount++;
+                                            numList.RemoveAt(numList.Count - 1);
+                                        }
+                                    }
+                                    ItemCount = 0;
                                     break;
                             }
                         }
