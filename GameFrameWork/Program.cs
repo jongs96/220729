@@ -20,13 +20,13 @@ namespace GameFrameWork
 
         enum ITEM
         {
-            //빗자루 - 1몇초마다 숫자 하나씩(뒤에서부터) 자동으로 제거(5초동안)
-            //청소기 - 숫자 올클리어
-            //또또또 - 같은 숫자만 여러개나오기 (5개)
-            //보약 - 라이프 증가(+1)
-            //피버 - 점수2배 (5초)
-            //타임머신 레벨 다운 (속도도 같이 내려가기)
-            //달팽이 - 5초간 속도 감소
+            //빗자루 - 1몇초마다 숫자 하나씩(뒤에서부터) 자동으로 제거(5초동안) - 완료
+            //청소기 - 숫자 올클리어 - 완료
+            //또또또 - 같은 숫자만 여러개나오기 (5개) - 완료
+            //보약 - 라이프 증가(+1)(최대 5) - 완료
+            //피버 - 점수2배 (5초) - 완료
+            //타임머신 레벨 다운 (속도도 같이 내려가기) - 완료
+            //달팽이 - 5초간 속도 감소(스피드 2.0) 
             NONE, BROOM, CLEANER, TOTO, MEDI, FEVER, TIMEMACHINE, SNAIL
         }
 
@@ -46,6 +46,8 @@ namespace GameFrameWork
         int Life = 3;
         double itemTime = 0.0;//item유지시간
         double ItemPlayTime = 0;//playtime처럼 itemtime check 변수.
+        int itemNumber = 0;
+        int itemKeepCount = 0;
         ITEM usedItem = ITEM.NONE;
         
         void ChangeState(STATE s)//함수를 통해서만 상태를 바꿔줘야함
@@ -94,17 +96,30 @@ namespace GameFrameWork
                 case STATE.PLAY://play상태에서만 게임 플레이가 진행이 되는것
                     PlayInputProcess();
 
-                    if (usedItem != ITEM.NONE)
+                    if (usedItem != ITEM.TOTO && usedItem != ITEM.NONE)//'또또'의 예외처리
                     {
                         itemTime -= Time.deltaTime;
-                        ItemPlayTime += Time.deltaTime;
-
+                        switch(usedItem)
+                        {
+                            case ITEM.SNAIL:
+                                break;
+                            default:
+                                ItemPlayTime += Time.deltaTime;
+                                break;
+                        }
                         Console.SetCursorPosition(25, 1);
                         Console.Write($"{itemTime.ToString("00.00")}");
 
                         if (itemTime <= 0.0f)
                         {
+                            switch(usedItem)
+                            {
+                                case ITEM.SNAIL:
+                                    speed = ItemPlayTime;
+                                    break;
+                            }
                             usedItem = ITEM.NONE;
+                            ItemPlayTime = 0.0f;
                             reDraw = true;
                         }
                         else
@@ -134,7 +149,21 @@ namespace GameFrameWork
                         }
                         else
                         {
-                            numList.Add(myRandom.Next(1, 6));
+                            switch(usedItem)
+                            {
+                                case ITEM.TOTO:
+                                    numList.Add(itemNumber);
+                                    if(--itemKeepCount==0)
+                                    {
+                                        usedItem = ITEM.NONE;
+                                    }
+                                    Console.SetCursorPosition(25, 1);
+                                    Console.Write($"{itemKeepCount}");
+                                    break;
+                                default:
+                                    numList.Add(myRandom.Next(1, 6));
+                                    break;
+                            }
                             reDraw = true;
                         }
                     }
@@ -191,7 +220,15 @@ namespace GameFrameWork
                             {
                                 reDraw = true;
                                 numList.RemoveAt(0);
-                                score += 10;
+                                switch(usedItem)
+                                {
+                                    case ITEM.FEVER:
+                                        score += 20;
+                                        break;
+                                    default:
+                                        score += 10;
+                                        break;
+                                }
                                 if (++LevelCount == 3)
                                 {
                                     LevelCount = 0;
@@ -227,6 +264,7 @@ namespace GameFrameWork
         }
         void UseItem(int i)// i = Slot number
         {
+            if (usedItem != ITEM.NONE) return;//사용중 아이템이있다면 사용하지 못하게.
             usedItem = itemSlot[i];
             itemSlot[i] = ITEM.NONE;
             switch(usedItem)
@@ -240,13 +278,37 @@ namespace GameFrameWork
                     itemTime = 1.0;
                     numList.Clear();
                     break;
+                case ITEM.TOTO:
+                    itemNumber = myRandom.Next(1, 6);
+                    itemKeepCount = 5;
+                    break;
+                case ITEM.MEDI:
+                    itemTime = 1.0;
+                    if (Life < 5) Life++;
+                    break;
+                case ITEM.FEVER:
+                    itemTime = 5.0f;
+                    break;
+                case ITEM.TIMEMACHINE:
+                    itemTime = 1.0;
+                    if (Level > 1)
+                    {
+                        Level--;
+                        speed /= 0.9;
+                    }
+                    break;
+                case ITEM.SNAIL:
+                    itemTime = 5.0;
+                    ItemPlayTime = speed;
+                    speed = 2.0;
+                    break;
             }
-            ItemPlayTime = 0.0f;
             reDraw = true;
         }
         void AddItem()
         {
-            ITEM item = ITEM.CLEANER;
+            ITEM item = (ITEM)myRandom.Next(1,System.Enum.GetValues(typeof(ITEM)).Length); //enum ITEM의 총 갯수
+            
             for(int i = 0; i < itemSlot.Length; ++i)
             {
                 if(itemSlot[i] == ITEM.NONE)
@@ -256,7 +318,7 @@ namespace GameFrameWork
                     break;
                 }
             }
-        }
+        }        
 
         void LevelUp()
         {
@@ -285,7 +347,7 @@ namespace GameFrameWork
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Score:{score.ToString("00000")}");
             Console.ForegroundColor = old;
-            Console.SetCursorPosition(25, 1);
+            Console.SetCursorPosition(25, 0);
             Console.WriteLine($"Life :{Life}");
 
             Console.SetCursorPosition(0, 1);
@@ -323,10 +385,15 @@ namespace GameFrameWork
 
             reDraw = false;
         }
+        
+        public void Destory()
+        {
+            //Console.WriteLine("게임을 종료합니다.");
+        }
         string GetItemName(ITEM item)
         {
             string name = "";
-            switch(item)
+            switch (item)
             {
                 case ITEM.NONE:
                     name = "없음";
@@ -337,12 +404,23 @@ namespace GameFrameWork
                 case ITEM.CLEANER:
                     name = "청소기";
                     break;
+                case ITEM.TOTO:
+                    name = "또또또";
+                    break;
+                case ITEM.MEDI:
+                    name = "보약";
+                    break;
+                case ITEM.FEVER:
+                    name = "점수2배!";
+                    break;
+                case ITEM.TIMEMACHINE:
+                    name = "레벨다운";
+                    break;
+                case ITEM.SNAIL:
+                    name = "천천히";
+                    break;
             }
             return name;
-        }
-        public void Destory()
-        {
-            //Console.WriteLine("게임을 종료합니다.");
         }
     }
     class Program
