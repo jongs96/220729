@@ -7,7 +7,6 @@ namespace GameFrameWork
     //유한상태기계(FSM)
     //상태에 따라 동작하도록 하는 것
     //상태는 중복되지 않아야 한다. ex)normal, battle의 상태가 중복될 수 없음.
-    //
     class Time
     {
         public static double deltaTime;
@@ -45,14 +44,15 @@ namespace GameFrameWork
         int ItemCount = 0;
         double speed = 2.0;
         int Life = 3;
-        double itemTime = 0.0;
+        double itemTime = 0.0;//item유지시간
+        double ItemPlayTime = 0;//playtime처럼 itemtime check 변수.
         ITEM usedItem = ITEM.NONE;
         
         void ChangeState(STATE s)//함수를 통해서만 상태를 바꿔줘야함
         {
             if (myState == s) return;
             myState = s;
-            switch(myState)//각각의 상태에서 해야할 일 분기문처리.
+            switch(myState)//각각의 상태가 변환되면서 해야할 일 분기문처리.
             {
                 case STATE.CTEATE:
                     break;
@@ -96,27 +96,27 @@ namespace GameFrameWork
 
                     if (usedItem != ITEM.NONE)
                     {
-                        itemTime = 5.0f;
                         itemTime -= Time.deltaTime;
+                        ItemPlayTime += Time.deltaTime;
+
+                        Console.SetCursorPosition(25, 1);
+                        Console.Write($"{itemTime.ToString("00.00")}");
+
                         if (itemTime <= 0.0f)
                         {
                             usedItem = ITEM.NONE;
+                            reDraw = true;
                         }
                         else
                         {
                             switch(usedItem)
                             {
                                 case ITEM.BROOM://1초가 지났는지를 셀수있는 변수로 지날때마다 numlist.count -1 숫자제거
-                                    while (ItemCount < 5)
+                                    if (ItemPlayTime >= 1.0f)
                                     {
-                                        if (itemTime > 1)
-                                        {
-                                            itemTime -= 1;
-                                            ItemCount++;
-                                            numList.RemoveAt(numList.Count - 1);
-                                        }
-                                    }
-                                    ItemCount = 0;
+                                        ItemPlayTime -= 1;
+                                        if (numList.Count > 0) numList.RemoveAt(numList.Count - 1);
+                                    }                                    
                                     break;
                             }
                         }
@@ -229,19 +229,24 @@ namespace GameFrameWork
         {
             usedItem = itemSlot[i];
             itemSlot[i] = ITEM.NONE;
-            switch(itemSlot[i])
+            switch(usedItem)
             {
                 case ITEM.NONE:
                     break;
                 case ITEM.BROOM:
                     itemTime = 5.0;
                     break;
+                case ITEM.CLEANER:
+                    itemTime = 1.0;
+                    numList.Clear();
+                    break;
             }
+            ItemPlayTime = 0.0f;
             reDraw = true;
         }
         void AddItem()
         {
-            ITEM item = ITEM.BROOM;
+            ITEM item = ITEM.CLEANER;
             for(int i = 0; i < itemSlot.Length; ++i)
             {
                 if(itemSlot[i] == ITEM.NONE)
@@ -276,13 +281,24 @@ namespace GameFrameWork
             Console.SetCursorPosition(0, 0);
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"Level: {Level}");
-            Console.SetCursorPosition(20, 0);
+            Console.SetCursorPosition(10, 0);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Score:{score.ToString("00000")}");
             Console.ForegroundColor = old;
-            Console.SetCursorPosition(20, 1);
+            Console.SetCursorPosition(25, 1);
             Console.WriteLine($"Life :{Life}");
+
             Console.SetCursorPosition(0, 1);
+            if (usedItem != ITEM.NONE)
+            {
+                Console.WriteLine($"[{GetItemName(usedItem)}]");
+            }
+            else
+            {
+                Console.Write("                                          ");
+            }
+
+            Console.SetCursorPosition(0, 3);
             for (int i = numList.Count - 1; i >= 0; --i)
             {
                 Console.Write(numList[i]);
@@ -297,7 +313,10 @@ namespace GameFrameWork
             Console.WriteLine();
             Console.WriteLine();
 
-            foreach(ITEM item in itemSlot)
+            Console.SetCursorPosition(0, 5);
+            Console.Write("                                      ");// 잔상제거
+            Console.SetCursorPosition(0, 5);
+            foreach (ITEM item in itemSlot)
             {
                 Console.Write($"[{GetItemName(item)}]");
             }
@@ -314,6 +333,9 @@ namespace GameFrameWork
                     break;
                 case ITEM.BROOM:
                     name = "빗자루";
+                    break;
+                case ITEM.CLEANER:
+                    name = "청소기";
                     break;
             }
             return name;
